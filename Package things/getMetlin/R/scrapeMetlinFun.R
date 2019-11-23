@@ -61,7 +61,8 @@ getMetlinMz <- function(cmpd_mz, ppm=2.5){
     cbind(search_ids, .) %>%
     as.data.frame() %>%
     `names<-`(c("cmpd_id", "exact_mass", "cmpd_name", "formula",
-                "CAS", "KEGG", "MSMS", "Structure"))
+                "CAS", "KEGG", "MSMS", "Structure")) %>%
+    select(-Structure)
 
   MSMS_subset <- subset(search_data, MSMS=="experimental")
 
@@ -126,7 +127,8 @@ getMetlinName <- function(name){
     cbind(search_ids, .) %>%
     as.data.frame() %>%
     `names<-`(c("cmpd_id", "exact_mass", "cmpd_name", "formula",
-                "CAS", "KEGG", "MSMS", "Structure"))
+                "CAS", "KEGG", "MSMS", "Structure")) %>%
+    select(-Structure)
 
   MSMS_subset <- subset(search_data, MSMS=="experimental")
 
