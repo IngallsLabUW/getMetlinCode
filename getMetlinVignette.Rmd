@@ -108,7 +108,8 @@ betaine_ms2 %>%
     #geom_hline(yintercept=0) +
     facet_wrap(~voltage, ncol = 1) +
     theme_bw() +
-    xlim(0, max(betaine_ms2$frag_mass))
+    xlim(0, max(betaine_ms2$frag_mass)) +
+    ggtitle("Betaine")
 ```
 
 The ggplots can also be saved and rendered interactively with **ggplotly**, to
@@ -270,6 +271,4 @@ getMetlinMS2 <- function(cmpd_id){
   
   return(ms2_df)
 }
-
-
 ```

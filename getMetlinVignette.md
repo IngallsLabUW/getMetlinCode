@@ -192,7 +192,7 @@ for(i in split_volt_pos_ms2){
 axis(side = 1)
 ```
 
-![](getMetlinMarkdown_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+![](getMetlinVignette_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
 ### Plot the data (ggplot method)
 
@@ -215,10 +215,11 @@ betaine_ms2 %>%
     #geom_hline(yintercept=0) +
     facet_wrap(~voltage, ncol = 1) +
     theme_bw() +
-    xlim(0, max(betaine_ms2$frag_mass))
+    xlim(0, max(betaine_ms2$frag_mass)) +
+    ggtitle("Betaine")
 ```
 
-![](getMetlinMarkdown_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](getMetlinVignette_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 The ggplots can also be saved and rendered interactively with
 **ggplotly**, to mimic the interactive method available on the Metlin
