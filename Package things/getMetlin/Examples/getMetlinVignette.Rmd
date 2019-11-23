@@ -1,0 +1,75 @@
+---
+title: "getMetlinVignette"
+author: "wkumler"
+date: "September 30, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Metlin's got a ton of useful data, but it's trapped behind a weird interactive
+Javascript thing in their website. The functions here allow the retrieval of
+arbitrary amounts of data from the website in a scripted fashion.
+
+Two notes - one, I'm pretty sure this would not make Metlin happy. I'm not sure
+it's technically *illegal* but I'd rather not have to figure that out. Two,
+Metlin has some rate-limitations in place that, if exceeded, will block an IP
+for about a day. I triggered this while trying to pull down the data for
+20 amino acids, 5 times, within a minute. So I'm not sure how generous or 
+aggressive they actually are.
+
+```{r cars}
+library(getMetlin)
+library(dplyr)
+
+# Start by searching for Metlin records by name or mass
+head(getMetlinMz(117.078979))
+head(getMetlinName("Betaine"))
+
+# Then, access the MS/MS data for a record that has them
+sample_ms2_cmpd <- getMetlinMz(117.078979) %>% 
+  filter(MSMS=="experimental") %>% 
+  slice(1)
+
+metlin_id <- as.numeric(as.character(sample_ms2_cmpd$cmpd_id))
+
+sample_ms2 <- getMetlinMS2(metlin_id)
+head(sample_ms2)
+
+# Plot it
+split_volt_pos_ms2 <- sample_ms2 %>%
+  subset(polarity=="+") %>%
+  split(.$voltage)
+layout(matrix(c(1, rep(2:(length(split_volt_pos_ms2)+1), each=2),  1), ncol = 1))
+par(mar=c(0.1, 4.1, 0.1, 0.1))
+plot.new()
+text(x = 0.5, y=1, labels = sample_ms2_cmpd$cmpd_name, cex=3)
+for(i in split_volt_pos_ms2){
+  plot(i$frag_mass, i$frag_int, xlab = "", 
+       ylab=paste("Voltage", unique(i$voltage)),
+       xlim=c(0, max(sample_ms2$frag_mass)), 
+       xaxt="n", yaxt="n", type="n", ylim=c(0, 120))
+  segments(x0 = i$frag_mass, x1 = i$frag_mass,
+           y0 = 0, y1 = i$frag_int)
+  axis(side = 2, at = c(0, 50, 100), labels = c(0, 50, 100))
+}
+axis(side = 1)
+
+library(ggplot2)
+gp <- sample_ms2 %>%
+  filter(polarity=="+") %>%
+    #filter(voltage==20) %>%
+    ggplot(label=frag_mass) +
+    geom_segment(aes(yend=0, x=frag_mass, y=frag_int, xend=frag_mass)) +
+    #geom_hline(yintercept=0) +
+    facet_wrap(~voltage, ncol = 1) +
+    theme_bw() +
+    xlim(0, max(sample_ms2$frag_mass))
+gp
+
+library(plotly)
+ggplotly(gp, tooltip = c("y", "x"))
+
+```

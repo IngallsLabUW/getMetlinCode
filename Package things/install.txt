@@ -1,0 +1,1 @@
+install.packages("path/to/tar/file", source = TRUE, repos=NULL)
