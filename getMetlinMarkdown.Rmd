@@ -1,0 +1,113 @@
+---
+title: "getMetlinVignette"
+author: "William Kumler"
+output: github_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+source("getMetlinFunctions.R")
+```
+
+### Intro
+
+Metlin's got a ton of useful data, but it's trapped behind a weird interactive
+Javascript thing in their website. The functions here allow the retrieval of
+arbitrary amounts of data from the website in a scripted fashion.
+
+NOTE: Metlin has some rate-limitations in place that, if exceeded, will block an IP for about a day. I triggered this while trying to pull down the data for 100 compounds within a minute, and haven't played with it beyond that. I'm not sure how generous or aggressive the limits actually are.
+
+### Get data for a given compound name or mass
+
+When called, **getMetlinMz** and **getMetlinName** will print out some diagnostic
+information about the number of compounds found and general structural info. The
+object *returned* by the function is a data frame with columns for Metlin's internal
+compound ID, the exact mass of the compound, and the compound name, formula,
+CAS and KEGG numbers. The final column tells you whether they have MS/MS data for
+the given compound.
+
+**getMetlinName** tends to be a little overeager, and may return compounds that
+are only vaguely related to your search. This is a function of Metlin's name
+search algorithm, not this code, and you'd get the same results via the Advanced
+Search function on the Metlin website.
+
+```{r}
+mass_data <- getMetlinMz(117.078979)
+str(mass_data)
+head(mass_data)
+
+name_data <- getMetlinName("Betaine")
+str(name_data)
+head(name_data)
+```
+
+### Get MS/MS data for a given compound
+
+After a preliminary search has been established, compounds with "experimental"
+in the MSMS column can be searched again for the MS/MS data specifically. 
+**getMetlinMS2** accepts the unique Metlin ID for a compound and returns a
+data frame with all MS/MS data in long format. The columns are "polarity" (either
+"+" or "-", depending on the polarity the data was collected in), "adduct" (
+usually "[M+H]" or "[M-H]"), "voltage" (the voltage of the collision cell - 
+higher voltages typically produce smaller fragments), and finally each fragment's
+mass and intensity as "frag_mass" and "frag_int", respectively. Intensity is
+normalized to the highest peak, and therefore scaled from 100.
+
+```{r}
+#Preliminary search for a compound
+name_data <- getMetlinName("Betaine")
+
+#Access compound ID for the actual compound we'd like to get MS/MS data for
+betaine_data <- name_data[3,]
+betaine_id <- as.numeric(as.character(betaine_data$cmpd_id))
+
+#Request ms2 data
+betaine_ms2 <- getMetlinMS2(betaine_id)
+str(betaine_ms2)
+head(betaine_ms2)
+```
+
+### Plot the data (base R)
+
+```{r}
+# Base R plotting
+# Split the data frame into each voltage and look at only one polarity
+split_volt_pos_ms2 <- betaine_ms2 %>%
+  subset(polarity=="+") %>%
+  split(.$voltage)
+# Arrange the output nicely
+layout(matrix(c(1, rep(2:(length(split_volt_pos_ms2)+1), each=2),  1), ncol = 1))
+par(mar=c(0.1, 4.1, 0.1, 0.1))
+plot.new()
+# Aaaaaand plot each voltage
+text(x = 0.5, y=1, labels = betaine_data$cmpd_name, cex=3)
+for(i in split_volt_pos_ms2){
+  plot(i$frag_mass, i$frag_int, xlab = "", 
+       ylab=paste("Voltage", unique(i$voltage)),
+       xlim=c(0, max(betaine_ms2$frag_mass)), 
+       xaxt="n", yaxt="n", type="n", ylim=c(0, 120))
+  segments(x0 = i$frag_mass, x1 = i$frag_mass,
+           y0 = 0, y1 = i$frag_int)
+  axis(side = 2, at = c(0, 50, 100), labels = c(0, 50, 100))
+}
+axis(side = 1)
+```
+
+### Plot the data (ggplot method)
+
+```{r}
+library(ggplot2)
+betaine_ms2 %>%
+  filter(polarity=="+") %>%
+    #filter(voltage==20) %>%
+    ggplot(label=frag_mass) +
+    geom_segment(aes(yend=0, x=frag_mass, y=frag_int, xend=frag_mass)) +
+    #geom_hline(yintercept=0) +
+    facet_wrap(~voltage, ncol = 1) +
+    theme_bw() +
+    xlim(0, max(betaine_ms2$frag_mass))
+```
+
+The ggplots can also be saved and rendered interactively with **ggplotly**, to
+mimic the interactive method available on the Metlin website.
