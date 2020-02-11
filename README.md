@@ -1,6 +1,10 @@
 # getMetlinCode
 Code used to query the Metlin database for mass and MSn data
 
+## NOTE:
+
+This code is currently deprecated, as recent updates to Metlin's access guidelines prohibit scripted access. Using these functions may result in a temporary or permanent ban from the website.
+
 The [Metlin database](https://metlin.scripps.edu/landing_page.php?pgcontent=mainPage) is a massive repository of mass-spectrometry data, but it can be hard to access via scripts. This repository contains code and examples illustrating a couple convenient wrapper functions I've written to ask Metlin for various bits of data and get them into R nicely.
 
 ## Expected packages:
